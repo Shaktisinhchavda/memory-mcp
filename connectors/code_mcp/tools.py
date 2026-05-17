@@ -22,13 +22,18 @@ logger = logging.getLogger(__name__)
 
 def _run_git(args: list[str], cwd: str) -> tuple[str, str, int]:
     """Run a git command and return (stdout, stderr, returncode)."""
+    # Prevent git from opening a pager or prompting for input
+    env = {**os.environ, "GIT_PAGER": "", "GIT_TERMINAL_PROMPT": "0"}
     try:
         result = subprocess.run(
-            ["git"] + args,
+            ["git", "--no-pager"] + args,
             cwd=cwd,
             capture_output=True,
             text=True,
-            timeout=30,
+            timeout=10,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
         )
         return result.stdout, result.stderr, result.returncode
     except FileNotFoundError:
@@ -158,14 +163,19 @@ def get_repo_stats(repo_path: str) -> dict[str, Any]:
     stdout, _, _ = _run_git(["rev-list", "--count", "HEAD"], cwd=repo_path)
     total_commits = int(stdout.strip()) if stdout.strip().isdigit() else 0
 
-    # Contributors
-    stdout2, _, _ = _run_git(["shortlog", "-sn", "--no-merges", "HEAD"], cwd=repo_path)
-    contributors = []
-    for line in stdout2.strip().split("\n"):
-        if line.strip():
-            parts = line.strip().split("\t", 1)
-            if len(parts) == 2:
-                contributors.append({"commits": int(parts[0].strip()), "name": parts[1].strip()})
+    # Contributors — use git log instead of git shortlog (shortlog hangs on Windows)
+    stdout2, _, _ = _run_git(
+        ["log", "--format=%an", "--no-merges", "-100"],
+        cwd=repo_path,
+    )
+    contributor_counts: dict[str, int] = {}
+    for name in stdout2.strip().split("\n"):
+        if name.strip():
+            contributor_counts[name.strip()] = contributor_counts.get(name.strip(), 0) + 1
+    contributors = [
+        {"commits": count, "name": name}
+        for name, count in sorted(contributor_counts.items(), key=lambda x: -x[1])
+    ]
 
     # Current branch
     branch, _, _ = _run_git(["branch", "--show-current"], cwd=repo_path)
