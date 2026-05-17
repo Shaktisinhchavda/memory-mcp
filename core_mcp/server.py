@@ -23,7 +23,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 
 from config.settings import settings
-from core_mcp.tools.notes import list_notes, read_note
+from core_mcp.tools.notes import list_notes, read_note, save_note as _save_note, append_note as _append_note
 from core_mcp.tools.search import semantic_search as _semantic_search, get_index_stats
 from core_mcp.event_logger.database import get_recent_events, init_database
 
@@ -142,6 +142,52 @@ def index_stats() -> str:
     """
     stats = get_index_stats()
     return json.dumps(stats, indent=2, default=str)
+
+
+# ──────────────────────────────────────────────────────────
+# Tool 5: save_note — Write memories back
+# ──────────────────────────────────────────────────────────
+
+@mcp.tool()
+def save_note(filename: str, content: str) -> str:
+    """
+    Save a new note or overwrite an existing one.
+
+    Use this to write memories, meeting summaries, conversation notes,
+    or any context back into the personal knowledge base.
+
+    Args:
+        filename: Name for the note file (e.g., "meeting-summary.md").
+        content: Full content to write.
+
+    Returns:
+        JSON string with saved file metadata.
+    """
+    result = _save_note(filename, content)
+    return json.dumps(result, indent=2, default=str)
+
+
+# ──────────────────────────────────────────────────────────
+# Tool 6: append_note — Add to existing notes
+# ──────────────────────────────────────────────────────────
+
+@mcp.tool()
+def append_note(filename: str, content: str) -> str:
+    """
+    Append content to an existing note.
+
+    Use this to add follow-up context, action items, or updates
+    to an existing note without overwriting it.
+
+    Args:
+        filename: Name of the existing note file.
+        content: Content to append.
+
+    Returns:
+        JSON string with updated file metadata.
+    """
+    result = _append_note(filename, content)
+    return json.dumps(result, indent=2, default=str)
 
 
 # ──────────────────────────────────────────────────────────

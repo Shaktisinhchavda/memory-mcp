@@ -1,14 +1,16 @@
 """
-Index Notes Script — One-shot indexing of all notes into ChromaDB.
+Index Notes Script — Incremental indexing of notes into ChromaDB.
 
-Run this after adding new notes to data/notes/:
-    uv run python scripts/index_notes.py
+Only re-indexes new or modified files by default.
+Use --force for a full rebuild.
+
+    uv run python scripts/index_notes.py          # incremental
+    uv run python scripts/index_notes.py --force   # full rebuild
 """
 
 import logging
 import sys
 
-# Add project root to path
 sys.path.insert(0, ".")
 
 logging.basicConfig(
@@ -20,20 +22,25 @@ from core_mcp.vector_store.indexer import Indexer
 
 
 def main():
+    force = "--force" in sys.argv
+
     print("=" * 50)
     print("  Personal MCP — Note Indexer")
+    print(f"  Mode: {'FULL REBUILD' if force else 'INCREMENTAL'}")
     print("=" * 50)
 
     indexer = Indexer()
-    stats = indexer.index_all_notes()
+    stats = indexer.index_all_notes(force=force)
 
-    print(f"\n✅ Indexing complete!")
-    print(f"   Files found:   {stats['total_files']}")
-    print(f"   Files indexed: {stats['indexed_files']}")
-    print(f"   Total chunks:  {stats['total_chunks']}")
+    print(f"\nIndexing complete!")
+    print(f"   Mode:              {stats['mode']}")
+    print(f"   Files found:       {stats['total_files']}")
+    print(f"   Files indexed:     {stats['indexed_files']}")
+    print(f"   Skipped unchanged: {stats['skipped_unchanged']}")
+    print(f"   Total chunks:      {stats['total_chunks']}")
 
     if stats["errors"]:
-        print(f"\n⚠️  Skipped {len(stats['errors'])} files:")
+        print(f"\n   Skipped {len(stats['errors'])} files:")
         for err in stats["errors"]:
             print(f"   - {err['file']}: {err['error']}")
 

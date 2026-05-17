@@ -1,12 +1,14 @@
 """
-Notes Tool — Read and list personal notes from the local filesystem.
+Notes Tool — Read, list, and write personal notes on the local filesystem.
 
 This MCP tool gives AI agents the ability to:
 - List all notes in your notes directory
 - Read the full content of any specific note
+- **Save new notes** (memory write-back)
+- **Append to existing notes**
 - Get note metadata (size, last modified, etc.)
 
-The tool reads from the path configured in NOTES_DIR (.env).
+The tool reads/writes from the path configured in NOTES_DIR (.env).
 """
 
 import logging
@@ -109,3 +111,87 @@ def read_note(filename: str) -> dict[str, Any]:
         }
     except (UnicodeDecodeError, PermissionError) as e:
         return {"error": f"Could not read {filename}: {e}"}
+
+
+def save_note(filename: str, content: str) -> dict[str, Any]:
+    """
+    Save a new note or overwrite an existing one.
+
+    This enables AI agents to **write memories back** into the system.
+    The note is saved to the notes directory and can be indexed later.
+
+    Args:
+        filename: Name for the note file (e.g., "meeting-summary.md").
+                  Must end in a supported extension (.md, .txt, .rst, .org).
+        content: Full content to write.
+
+    Returns:
+        Dict with saved file metadata, or error.
+    """
+    notes_dir = settings.notes_dir.resolve()
+
+    # Validate extension
+    ext = Path(filename).suffix.lower()
+    if ext not in SUPPORTED_EXTENSIONS:
+        return {"error": f"Unsupported extension '{ext}'. Use: {SUPPORTED_EXTENSIONS}"}
+
+    filepath = (notes_dir / filename).resolve()
+
+    # Security: prevent path traversal
+    if not str(filepath).startswith(str(notes_dir)):
+        return {"error": "Access denied: path outside notes directory"}
+
+    try:
+        filepath.parent.mkdir(parents=True, exist_ok=True)
+        filepath.write_text(content, encoding="utf-8")
+        stat = filepath.stat()
+        logger.info(f"Saved note: {filename} ({stat.st_size} bytes)")
+        return {
+            "status": "saved",
+            "name": filepath.name,
+            "path": str(filepath.relative_to(notes_dir)),
+            "size_bytes": stat.st_size,
+            "modified_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+        }
+    except (PermissionError, OSError) as e:
+        return {"error": f"Could not save {filename}: {e}"}
+
+
+def append_note(filename: str, content: str) -> dict[str, Any]:
+    """
+    Append content to an existing note.
+
+    Useful for AI agents to add follow-up context, action items,
+    or conversation summaries to existing notes.
+
+    Args:
+        filename: Name of the existing note file.
+        content: Content to append (will be added with a newline separator).
+
+    Returns:
+        Dict with updated file metadata, or error.
+    """
+    notes_dir = settings.notes_dir.resolve()
+    filepath = (notes_dir / filename).resolve()
+
+    if not str(filepath).startswith(str(notes_dir)):
+        return {"error": "Access denied: path outside notes directory"}
+
+    if not filepath.exists():
+        return {"error": f"Note not found: {filename}. Use save_note to create new notes."}
+
+    try:
+        existing = filepath.read_text(encoding="utf-8")
+        updated = existing.rstrip() + "\n\n" + content
+        filepath.write_text(updated, encoding="utf-8")
+        stat = filepath.stat()
+        logger.info(f"Appended to note: {filename}")
+        return {
+            "status": "appended",
+            "name": filepath.name,
+            "size_bytes": stat.st_size,
+            "modified_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+        }
+    except (PermissionError, OSError, UnicodeDecodeError) as e:
+        return {"error": f"Could not append to {filename}: {e}"}
+
