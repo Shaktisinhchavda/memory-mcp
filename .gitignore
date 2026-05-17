@@ -10,18 +10,31 @@ build/
 .venv/
 venv/
 
-# Environment
+# Environment & Secrets
 .env
+config/google_credentials.json
+config/google_token.json
 
 # Data (personal — never commit)
 data/
 !data/.gitkeep
+!data/notes/.gitkeep
+!data/files/.gitkeep
+!data/conversations/.gitkeep
 
 # ChromaDB storage
 .chroma/
 
 # SQLite databases
 *.db
+
+# Neo4j (Docker volumes handled externally)
+neo4j_data/
+neo4j_logs/
+
+# Logs & temp files
+*.log
+*.tmp
 
 # IDE
 .vscode/
@@ -30,3 +43,6 @@ data/
 # OS
 .DS_Store
 Thumbs.db
+
+# uv lock (large, reproducible from pyproject.toml)
+uv.lock

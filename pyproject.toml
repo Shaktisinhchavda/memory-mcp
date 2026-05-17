@@ -18,6 +18,11 @@ dependencies = [
     "google-api-python-client>=2.0.0",
     "google-auth-httplib2>=0.2.0",
     "google-auth-oauthlib>=1.0.0",
+    # Phase 3 — Knowledge Graph
+    "neo4j>=5.0.0",
+    # Phase 4 — Unified Gateway
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
 ]
 
 [project.scripts]
@@ -28,4 +33,4 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["core_mcp", "config", "connectors"]
+packages = ["core_mcp", "config", "connectors", "knowledge_graph", "gateway"]
