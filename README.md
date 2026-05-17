@@ -1,4 +1,4 @@
-# 🧠 Personal MCP Ecosystem
+#  Personal MCP Ecosystem
 
 A modular, local-first infrastructure that exposes your personal data — files, notes, browser history, code activity, conversations — as unified semantic context via the **Model Context Protocol (MCP)**.
 
@@ -12,7 +12,7 @@ Any AI agent can plug into this and instantly know you.
 
 ---
 
-## ✨ Features
+##  Features
 
 | Capability | Description |
 |------------|-------------|
@@ -25,7 +25,7 @@ Any AI agent can plug into this and instantly know you.
 | **Event Logger** | Real-time file change tracking via watchdog |
 | **Unified Gateway** | FastAPI + LangGraph agent that routes queries across all sources |
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -55,7 +55,7 @@ Any AI agent can plug into this and instantly know you.
 └──────────────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Quick Start
+##  Quick Start
 
 ### Prerequisites
 
@@ -197,7 +197,7 @@ Open Swagger UI at `http://localhost:8000/docs`.
 | `graph_stats` | Node/relationship counts |
 | `ingest_file` | Extract entities into graph |
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 memory-mcp/
@@ -235,13 +235,13 @@ memory-mcp/
 └── .env.example              # Config template
 ```
 
-## 🔒 Privacy
+##  Privacy
 
 - **100% local-first** — all processing runs on your machine
 - **No cloud APIs required** — embeddings, search, and graph are local
 - **Personal data never committed** — `data/` is git-ignored
 - **Secrets excluded** — `.env`, credentials, and tokens are git-ignored
 
-## 📄 License
+##  License
 
 MIT
