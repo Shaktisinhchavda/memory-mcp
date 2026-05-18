@@ -1,4 +1,4 @@
-#  Personal MCP Ecosystem
+# Personal MCP Ecosystem
 
 A modular, local-first infrastructure that exposes your personal data — files, notes, browser history, code activity, conversations — as unified semantic context via the **Model Context Protocol (MCP)**.
 
@@ -12,20 +12,23 @@ Any AI agent can plug into this and instantly know you.
 
 ---
 
-##  Features
+## Features
 
 | Capability | Description |
 |------------|-------------|
 | **Semantic Search** | Query your notes by meaning using ChromaDB + sentence-transformers |
 | **Knowledge Graph** | Neo4j-backed entity extraction with relationship mapping |
+| **Memory Write-back** | AI agents can save new notes and append to existing ones |
 | **File Reader** | Read PDFs, DOCX, Markdown, code files from anywhere on disk |
-| **Browser History** | Search your Chrome browsing history |
+| **Browser History** | Search Chrome, Edge, and Firefox history (auto-detected) |
 | **Code Activity** | Git commits, repo stats, and VSCode recent files |
-| **Conversations** | Search exported Claude & ChatGPT conversations |
+| **Conversations** | Parse exported Claude & ChatGPT conversation JSON files |
+| **Calendar** | Google Calendar integration via OAuth 2.0 (requires setup) |
 | **Event Logger** | Real-time file change tracking via watchdog |
 | **Unified Gateway** | FastAPI + LangGraph agent that routes queries across all sources |
+| **Incremental Indexing** | Only re-indexes new/modified files — no full rebuilds needed |
 
-##  Architecture
+## Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
@@ -38,14 +41,15 @@ Any AI agent can plug into this and instantly know you.
 │  │ Core MCP │ │Files MCP │ │ Browser  │ │   Code MCP     │  │
 │  │          │ │          │ │   MCP    │ │                │  │
 │  │• Notes   │ │• PDF     │ │• Chrome  │ │• Git commits   │  │
-│  │• Search  │ │• DOCX    │ │  History │ │• Repo stats    │  │
-│  │• Events  │ │• Text    │ │• Stats   │ │• VSCode recent │  │
+│  │• Search  │ │• DOCX    │ │• Edge    │ │• Repo stats    │  │
+│  │• Events  │ │• Text    │ │• Firefox │ │• VSCode recent │  │
+│  │• Save    │ │          │ │          │ │                │  │
 │  └──────────┘ └──────────┘ └──────────┘ └────────────────┘  │
 │                                                              │
 │  ┌──────────────────┐ ┌──────────────────────────────────┐   │
 │  │ Conversations MCP│ │ Knowledge Graph MCP              │   │
 │  │                  │ │                                  │   │
-│  │• Claude exports  │ │• Entity extraction               │   │
+│  │• Claude exports  │ │• Entity extraction (regex-based) │   │
 │  │• ChatGPT exports │ │• Graph search (Neo4j)            │   │
 │  │• Search & parse  │ │• Path finding                    │   │
 │  └──────────────────┘ └──────────────────────────────────┘   │
@@ -55,14 +59,14 @@ Any AI agent can plug into this and instantly know you.
 └──────────────────────────────────────────────────────────────┘
 ```
 
-##  Quick Start
+## Quick Start
 
 ### Prerequisites
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) — Python package manager
 - [Docker](https://www.docker.com/) — for Neo4j (optional)
-- Google Chrome — for browser history (optional)
+- A supported browser (Chrome, Edge, or Firefox) — for browser history (optional)
 
 ### 1. Clone & Install
 
@@ -76,7 +80,7 @@ uv sync
 
 ```bash
 cp .env.example .env
-# Edit .env with your settings (defaults work out of the box)
+# Edit .env if needed — defaults work out of the box on any OS
 ```
 
 ### 3. Add Your Notes
@@ -84,15 +88,17 @@ cp .env.example .env
 Place markdown or text files in `data/notes/`:
 
 ```bash
-# Example
 echo "# My Project Ideas" > data/notes/ideas.md
 ```
 
 ### 4. Index & Build
 
 ```bash
-# Index notes into ChromaDB vector store
+# Index notes into ChromaDB (incremental — only new/modified files)
 uv run python scripts/index_notes.py
+
+# Full rebuild (if needed)
+uv run python scripts/index_notes.py --force
 
 # Start Neo4j (optional — for knowledge graph)
 docker compose up -d
@@ -105,40 +111,42 @@ uv run python scripts/build_graph.py
 
 **Option A — Claude Desktop Integration (recommended)**
 
-Add to `%APPDATA%\Claude\claude_desktop_config.json`:
+Add to your Claude Desktop config:
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
     "memory-mcp": {
       "command": "uv",
-      "args": ["--directory", "D:\\memory-mcp", "run", "python", "core_mcp/server.py"]
+      "args": ["--directory", "/path/to/memory-mcp", "run", "python", "core_mcp/server.py"]
     },
     "files-mcp": {
       "command": "uv",
-      "args": ["--directory", "D:\\memory-mcp", "run", "python", "connectors/files_mcp/server.py"]
+      "args": ["--directory", "/path/to/memory-mcp", "run", "python", "connectors/files_mcp/server.py"]
     },
     "browser-mcp": {
       "command": "uv",
-      "args": ["--directory", "D:\\memory-mcp", "run", "python", "connectors/browser_mcp/server.py"]
+      "args": ["--directory", "/path/to/memory-mcp", "run", "python", "connectors/browser_mcp/server.py"]
     },
     "code-mcp": {
       "command": "uv",
-      "args": ["--directory", "D:\\memory-mcp", "run", "python", "connectors/code_mcp/server.py"]
+      "args": ["--directory", "/path/to/memory-mcp", "run", "python", "connectors/code_mcp/server.py"]
     },
     "conversations-mcp": {
       "command": "uv",
-      "args": ["--directory", "D:\\memory-mcp", "run", "python", "connectors/conversations_mcp/server.py"]
+      "args": ["--directory", "/path/to/memory-mcp", "run", "python", "connectors/conversations_mcp/server.py"]
     },
     "graph-mcp": {
       "command": "uv",
-      "args": ["--directory", "D:\\memory-mcp", "run", "python", "knowledge_graph/server.py"]
+      "args": ["--directory", "/path/to/memory-mcp", "run", "python", "knowledge_graph/server.py"]
     }
   }
 }
 ```
 
-Restart Claude Desktop. You'll see the 🔨 icon.
+> Replace `/path/to/memory-mcp` with the actual absolute path to this project.
 
 **Option B — Unified Gateway (HTTP API)**
 
@@ -148,15 +156,17 @@ uv run uvicorn gateway.server:app --host 0.0.0.0 --port 8000
 
 Open Swagger UI at `http://localhost:8000/docs`.
 
-## 🛠️ Tools Reference
+## Tools Reference (25 tools)
 
-### Core MCP (4 tools)
+### Core MCP (6 tools)
 | Tool | Description |
 |------|-------------|
 | `read_notes` | List and read personal notes |
 | `semantic_search` | Query knowledge base by meaning |
 | `get_recent_activity` | Recent file change events |
 | `index_stats` | Vector store diagnostics |
+| `save_note` | **Save new notes** (memory write-back) |
+| `append_note` | **Append to existing notes** |
 
 ### Files MCP (3 tools)
 | Tool | Description |
@@ -165,13 +175,14 @@ Open Swagger UI at `http://localhost:8000/docs`.
 | `list_local_files` | List files in a directory |
 | `search_local_files` | Search by filename pattern |
 
-### Browser MCP (4 tools)
+### Browser MCP (5 tools)
 | Tool | Description |
 |------|-------------|
-| `recent_browsing_history` | Recent Chrome history |
+| `recent_browsing_history` | Recent history (Chrome/Edge/Firefox) |
 | `most_visited_sites` | Top sites by visit count |
 | `search_browsing_history` | Search by keyword |
-| `browsing_stats` | Overall browsing stats |
+| `browsing_stats` | Stats across all browsers |
+| `detected_browsers` | List installed browsers |
 
 ### Code MCP (5 tools)
 | Tool | Description |
@@ -189,6 +200,17 @@ Open Swagger UI at `http://localhost:8000/docs`.
 | `read_conversations` | Parse Claude/ChatGPT exports |
 | `search_in_conversations` | Search by keyword |
 
+> **Note:** Conversation support is export-based. Export your Claude or ChatGPT conversations as JSON and place them in `data/conversations/`. Live sync is not supported due to API limitations.
+
+### Calendar MCP (3 tools)
+| Tool | Description |
+|------|-------------|
+| `upcoming_events` | Future calendar events |
+| `todays_schedule` | Today's events |
+| `search_events` | Search events by keyword |
+
+> **Setup required:** Create a Google Cloud project, enable the Calendar API, download `credentials.json` to `config/`, and run the server once to complete OAuth. See [Google Calendar API Quickstart](https://developers.google.com/calendar/api/quickstart/python).
+
 ### Knowledge Graph MCP (4 tools)
 | Tool | Description |
 |------|-------------|
@@ -197,23 +219,46 @@ Open Swagger UI at `http://localhost:8000/docs`.
 | `graph_stats` | Node/relationship counts |
 | `ingest_file` | Extract entities into graph |
 
-##  Project Structure
+## Technical Details
+
+### Entity Extraction
+The knowledge graph uses **regex and pattern-based extraction** (no LLM required):
+- **People:** Capitalized multi-word names (e.g., "John Smith")
+- **Technologies:** Matched against a curated keyword list (56 terms)
+- **Topics:** Extracted from markdown headers
+- **Projects:** Detected by naming patterns (e.g., "VizDataAI", "FastAPI")
+- **Tasks:** Parsed from `- [ ]` / `- [x]` markdown checkboxes
+
+This is intentionally lightweight and local-only. For higher accuracy, swap in spaCy NER or an LLM-based extractor in `knowledge_graph/extractor.py`.
+
+### Incremental Indexing
+Both `index_notes.py` and `build_graph.py` track file modification times in a manifest file. Only new or changed files are re-processed. Use `--force` for a full rebuild.
+
+### Browser Support
+The browser connector auto-detects installed browsers:
+| Browser | Windows | macOS | Linux |
+|---------|---------|-------|-------|
+| Chrome  | Yes | Yes | Yes |
+| Edge    | Yes | Yes | Yes |
+| Firefox | Yes | Yes | Yes |
+
+## Project Structure
 
 ```
 memory-mcp/
 ├── core_mcp/                 # Phase 1 — Core MCP server
 │   ├── server.py             # Main MCP server (stdio)
-│   ├── tools/                # Notes + search tools
+│   ├── tools/                # Notes + search + write-back tools
 │   ├── vector_store/         # ChromaDB integration
 │   └── event_logger/         # File watcher + SQLite
 ├── connectors/               # Phase 2 — Data connectors
 │   ├── files_mcp/            # PDF, DOCX, text reader
-│   ├── browser_mcp/          # Chrome history
+│   ├── browser_mcp/          # Chrome, Edge, Firefox history
 │   ├── calendar_mcp/         # Google Calendar (OAuth)
 │   ├── code_mcp/             # Git + VSCode activity
 │   └── conversations_mcp/    # Claude/ChatGPT exports
 ├── knowledge_graph/          # Phase 3 — Neo4j graph
-│   ├── extractor.py          # Entity extraction
+│   ├── extractor.py          # Entity extraction (regex-based)
 │   ├── graph_store.py        # Neo4j CRUD + search
 │   └── server.py             # Graph MCP server
 ├── gateway/                  # Phase 4 — Unified gateway
@@ -223,7 +268,7 @@ memory-mcp/
 │   ├── context.py            # PersonalContext model
 │   └── server.py             # FastAPI gateway
 ├── scripts/                  # Utility scripts
-│   ├── index_notes.py        # Build vector index
+│   ├── index_notes.py        # Build vector index (incremental)
 │   ├── build_graph.py        # Build knowledge graph
 │   └── start_watcher.py      # Start file watcher
 ├── data/                     # Your personal data (git-ignored)
@@ -235,13 +280,20 @@ memory-mcp/
 └── .env.example              # Config template
 ```
 
-##  Privacy
+## Privacy
 
 - **100% local-first** — all processing runs on your machine
 - **No cloud APIs required** — embeddings, search, and graph are local
 - **Personal data never committed** — `data/` is git-ignored
 - **Secrets excluded** — `.env`, credentials, and tokens are git-ignored
+- **Cross-platform** — works on Windows, macOS, and Linux
 
-##  License
+## Known Limitations
+
+- **Conversations:** Export-only (Claude/ChatGPT JSON). No live sync due to API restrictions.
+- **Calendar:** Requires a one-time Google Cloud setup for OAuth credentials.
+- **Entity extraction:** Regex-based — works well for structured notes, may be noisy on unstructured text. Swappable for spaCy/LLM.
+
+## License
 
 MIT
