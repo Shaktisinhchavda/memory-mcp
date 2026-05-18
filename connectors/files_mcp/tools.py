@@ -64,6 +64,7 @@ def read_file(filepath: str, base_dir: str | None = None) -> dict[str, Any]:
     Read a file and extract its text content.
 
     Supports PDF, DOCX, and plain text formats.
+    Rejects paths to sensitive system directories for safety.
 
     Args:
         filepath: Path to the file (absolute or relative to base_dir).
@@ -77,6 +78,20 @@ def read_file(filepath: str, base_dir: str | None = None) -> dict[str, Any]:
         path = Path(base_dir) / path
 
     path = path.resolve()
+
+    # Safety: block access to sensitive system directories
+    _BLOCKED_PREFIXES_WIN = [
+        "C:\\Windows", "C:\\Program Files", "C:\\ProgramData",
+        "C:\\Users\\Default", "C:\\Recovery",
+    ]
+    _BLOCKED_PREFIXES_UNIX = [
+        "/etc", "/var", "/usr", "/bin", "/sbin", "/boot",
+        "/proc", "/sys", "/root",
+    ]
+    path_str = str(path)
+    for blocked in _BLOCKED_PREFIXES_WIN + _BLOCKED_PREFIXES_UNIX:
+        if path_str.lower().startswith(blocked.lower()):
+            return {"error": f"Access denied: cannot read from system directory {blocked}"}
 
     if not path.exists():
         return {"error": f"File not found: {filepath}"}

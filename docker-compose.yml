@@ -1,5 +1,6 @@
 # Docker Compose for Personal MCP Ecosystem
 # Starts Neo4j for the knowledge graph (Phase 3)
+# Password is read from .env file (NEO4J_PASSWORD variable)
 
 services:
   neo4j:
@@ -9,7 +10,7 @@ services:
       - "7474:7474"  # Browser UI
       - "7687:7687"  # Bolt protocol
     environment:
-      - NEO4J_AUTH=neo4j/memory-mcp-2026
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-changeme}
       - NEO4J_PLUGINS=["apoc"]
     volumes:
       - neo4j_data:/data
@@ -19,3 +20,4 @@ services:
 volumes:
   neo4j_data:
   neo4j_logs:
+

@@ -58,11 +58,12 @@ def execute_tools(state: AgentState) -> AgentState:
 
             elif category == "graph":
                 from knowledge_graph.graph_store import GraphStore
-                store = GraphStore()
+                if not hasattr(execute_tools, '_graph_store'):
+                    execute_tools._graph_store = GraphStore()
+                store = execute_tools._graph_store
                 if store.is_connected():
                     graph_data = store.graph_search(query, max_depth=2)
                     results["graph"] = graph_data.get("results", [])
-                    store.close()
                 else:
                     results["graph"] = []
 

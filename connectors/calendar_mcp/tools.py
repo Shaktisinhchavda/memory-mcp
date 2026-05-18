@@ -13,7 +13,7 @@ The token is saved to config/google_token.json for future use.
 
 import logging
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -85,7 +85,7 @@ def get_upcoming_events(max_results: int = 10, days_ahead: int = 7) -> list[dict
     if error:
         return [{"error": error}]
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     time_min = now.isoformat() + "Z"
     time_max = (now + timedelta(days=days_ahead)).isoformat() + "Z"
 
@@ -137,7 +137,7 @@ def search_events(query: str, days_back: int = 30, max_results: int = 20) -> lis
     if error:
         return [{"error": error}]
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     time_min = (now - timedelta(days=days_back)).isoformat() + "Z"
     time_max = (now + timedelta(days=7)).isoformat() + "Z"
 

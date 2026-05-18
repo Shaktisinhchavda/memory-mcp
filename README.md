@@ -151,7 +151,7 @@ Add to your Claude Desktop config:
 **Option B — Unified Gateway (HTTP API)**
 
 ```bash
-uv run uvicorn gateway.server:app --host 0.0.0.0 --port 8000
+uv run uvicorn gateway.server:app --host 127.0.0.1 --port 8000
 ```
 
 Open Swagger UI at `http://localhost:8000/docs`.

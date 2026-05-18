@@ -136,13 +136,13 @@ async def health_check():
     except Exception:
         services["event_logger"] = False
 
-    # Check Chrome History
+    # Check Browser History (Chrome/Edge/Firefox)
     try:
-        from connectors.browser_mcp.tools import get_history_stats
-        stats = get_history_stats()
-        services["chrome_history"] = "error" not in stats
+        from connectors.browser_mcp.tools import get_available_browsers
+        browsers = get_available_browsers()
+        services["browser_history"] = browsers.get("count", 0) > 0
     except Exception:
-        services["chrome_history"] = False
+        services["browser_history"] = False
 
     all_healthy = all(services.values())
 
@@ -160,7 +160,7 @@ async def list_sources():
             {
                 "name": "Core MCP",
                 "server": "memory-mcp",
-                "tools": ["read_notes", "semantic_search", "get_recent_activity", "index_stats"],
+                "tools": ["read_notes", "semantic_search", "get_recent_activity", "index_stats", "save_note", "append_note"],
                 "description": "Notes, semantic search, and file event tracking",
             },
             {
@@ -172,8 +172,8 @@ async def list_sources():
             {
                 "name": "Browser",
                 "server": "browser-mcp",
-                "tools": ["recent_browsing_history", "most_visited_sites", "search_browsing_history"],
-                "description": "Chrome browsing history",
+                "tools": ["recent_browsing_history", "most_visited_sites", "search_browsing_history", "browsing_stats", "detected_browsers"],
+                "description": "Chrome, Edge, and Firefox browsing history (auto-detected)",
             },
             {
                 "name": "Code",
@@ -194,5 +194,5 @@ async def list_sources():
                 "description": "Neo4j knowledge graph with entity relationships",
             },
         ],
-        "total_tools": 23,
+        "total_tools": 25,
     }

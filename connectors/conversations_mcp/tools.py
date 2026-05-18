@@ -14,9 +14,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from config.settings import settings
+
 logger = logging.getLogger(__name__)
 
-CONVERSATIONS_DIR = Path("data/conversations")
+CONVERSATIONS_DIR = settings.data_dir / "conversations"
 
 
 def _ensure_dir():

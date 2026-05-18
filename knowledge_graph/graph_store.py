@@ -10,6 +10,7 @@ Handles:
 """
 
 import logging
+import os
 from typing import Any
 
 from neo4j import GraphDatabase
@@ -17,10 +18,10 @@ from neo4j.exceptions import ServiceUnavailable, AuthError
 
 logger = logging.getLogger(__name__)
 
-# Default Neo4j connection settings (matches docker-compose.yml)
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "memory-mcp-2026"
+# Read Neo4j connection settings from environment (or .env via settings)
+NEO4J_URI = os.environ.get("NEO4J_URI", "bolt://localhost:7687")
+NEO4J_USER = os.environ.get("NEO4J_USER", "neo4j")
+NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "neo4j")
 
 
 class GraphStore:
@@ -190,7 +191,7 @@ class GraphStore:
         query = """
         MATCH (start)
         WHERE toLower(start.name) CONTAINS toLower($name)
-        OPTIONAL MATCH path = (start)-[*1..""" + str(max_depth) + """]->(connected)
+        OPTIONAL MATCH path = (start)-[*1..""" + str(max_depth) + """]-(connected)
         WITH start, collect(DISTINCT {
             name: connected.name,
             type: labels(connected)[0],

@@ -43,31 +43,30 @@ def compute_recency_score(timestamp_str: str, max_days: int = 30) -> float:
 
 
 def rank_semantic_results(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Add normalized scores to semantic search results."""
+    """Add normalized scores to semantic search results (0-1 scale)."""
     for r in results:
         base_relevance = r.get("relevance", 0.5)
         recency = compute_recency_score(
             r.get("metadata", {}).get("indexed_at", "")
         )
-        r["final_score"] = (SEMANTIC_WEIGHT * base_relevance) + (RECENCY_WEIGHT * recency)
+        # Weighted blend, normalized to 0-1
+        r["final_score"] = (0.7 * base_relevance) + (0.3 * recency)
     return sorted(results, key=lambda x: x.get("final_score", 0), reverse=True)
 
 
 def rank_graph_results(results: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Score graph results by connection density."""
+    """Score graph results by connection density (0-1 scale)."""
     for r in results:
         connections = len(r.get("connections", []))
         # More connections = higher relevance (normalized to 0-1)
-        graph_score = min(1.0, connections / 10.0)
-        r["final_score"] = GRAPH_WEIGHT * graph_score
+        r["final_score"] = min(1.0, connections / 10.0)
     return sorted(results, key=lambda x: x.get("final_score", 0), reverse=True)
 
 
 def rank_activity(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Score activity events by recency."""
+    """Score activity events by recency (0-1 scale)."""
     for e in events:
-        recency = compute_recency_score(e.get("timestamp", ""))
-        e["final_score"] = RECENCY_WEIGHT * recency
+        e["final_score"] = compute_recency_score(e.get("timestamp", ""))
     return sorted(events, key=lambda x: x.get("final_score", 0), reverse=True)
 
 

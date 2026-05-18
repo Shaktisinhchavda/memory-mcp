@@ -27,7 +27,7 @@ def recent_commits(repo_path: str, limit: int = 15) -> str:
     Get recent git commits from a repository.
 
     Args:
-        repo_path: Absolute path to the git repository (e.g. "D:/memory-mcp").
+        repo_path: Absolute path to the git repository (e.g. "/home/user/my-project").
         limit: Number of commits to return (default 15, max 100).
 
     Returns:

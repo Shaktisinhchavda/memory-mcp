@@ -197,11 +197,20 @@ def get_vscode_recent_files() -> list[dict[str, Any]]:
     Get recently opened files from VSCode.
 
     Reads the VSCode state database (state.vscdb).
+    Supports Windows, macOS, and Linux.
 
     Returns:
         List of recently opened file/folder paths.
     """
-    vscdb_path = Path(os.environ.get("APPDATA", "")) / "Code" / "User" / "globalStorage" / "state.vscdb"
+    import platform as _platform
+    system = _platform.system()
+
+    if system == "Windows":
+        vscdb_path = Path(os.environ.get("APPDATA", "")) / "Code" / "User" / "globalStorage" / "state.vscdb"
+    elif system == "Darwin":
+        vscdb_path = Path.home() / "Library" / "Application Support" / "Code" / "User" / "globalStorage" / "state.vscdb"
+    else:  # Linux
+        vscdb_path = Path.home() / ".config" / "Code" / "User" / "globalStorage" / "state.vscdb"
 
     if not vscdb_path.exists():
         return [{"error": f"VSCode state DB not found at: {vscdb_path}"}]
