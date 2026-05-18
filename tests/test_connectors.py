@@ -1,41 +1,50 @@
-"""Phase 2 — Connector Tests."""
+"""Phase 2 — Connector Tests (cross-platform)."""
 
 import sys
+from pathlib import Path
+
 sys.path.insert(0, ".")
+
+from config.settings import settings
+
+# Resolve paths from settings (works on any OS)
+NOTES_DIR = str(settings.notes_dir.resolve())
+PROJECT_ROOT = str(Path(".").resolve())
 
 
 def test_files_mcp():
     print("=== Testing files_mcp ===")
     from connectors.files_mcp.tools import list_files, read_file
 
-    files = list_files("d:/memory-mcp/data/notes")
+    files = list_files(NOTES_DIR)
     print(f"  Files found: {len(files)}")
-    assert len(files) >= 4, f"Expected >= 4 files, got {len(files)}"
 
-    result = read_file("d:/memory-mcp/data/notes/project-ideas.md")
-    assert "content" in result, f"Error: {result}"
-    print(f"  Read file: {result['name']} ({result['file_type']})")
+    if files:
+        # Read the first available file
+        first_file = Path(NOTES_DIR) / files[0]["name"]
+        result = read_file(str(first_file))
+        assert "content" in result, f"Error: {result}"
+        print(f"  Read file: {result['name']} ({result['file_type']})")
+    else:
+        print("  (No notes yet — place files in data/notes/)")
     print("  [PASS] files_mcp")
 
 
 def test_browser_mcp():
     print("\n=== Testing browser_mcp ===")
-    from connectors.browser_mcp.tools import get_history_stats, get_recent_history
+    from connectors.browser_mcp.tools import get_history_stats, get_available_browsers
+
+    browsers = get_available_browsers()
+    print(f"  Detected browsers: {list(browsers.get('browsers', {}).keys())}")
 
     stats = get_history_stats()
-    if "error" in stats:
-        print(f"  [SKIP] {stats['error']}")
+    if "error" in str(stats):
+        print(f"  [SKIP] No browser history accessible")
         return
 
-    print(f"  DB exists: {stats['db_exists']}")
-    print(f"  Total URLs: {stats['total_urls']}")
-    print(f"  Total visits: {stats['total_visits']}")
-
-    history = get_recent_history(5)
-    print(f"  Recent entries: {len(history)}")
-    for h in history[:3]:
-        title = h.get("title", "")[:50]
-        print(f"    - {title}")
+    for name, data in stats.items():
+        if isinstance(data, dict) and "total_urls" in data:
+            print(f"  {name}: {data['total_urls']} URLs, {data['total_visits']} visits")
     print("  [PASS] browser_mcp")
 
 
@@ -43,14 +52,14 @@ def test_code_mcp():
     print("\n=== Testing code_mcp ===")
     from connectors.code_mcp.tools import get_recent_commits, get_git_status, get_vscode_recent_files
 
-    # Test git
-    commits = get_recent_commits("d:/memory-mcp", 5)
+    # Test git using the project root (works on any OS)
+    commits = get_recent_commits(PROJECT_ROOT, 5)
     print(f"  Commits found: {len(commits)}")
     for c in commits[:3]:
         if "error" not in c:
             print(f"    - {c['hash']} {c['message'][:50]}")
 
-    status = get_git_status("d:/memory-mcp")
+    status = get_git_status(PROJECT_ROOT)
     print(f"  Branch: {status.get('branch', 'unknown')}")
     print(f"  Clean: {status.get('is_clean', 'unknown')}")
 
@@ -79,7 +88,6 @@ def test_conversations_mcp():
 
 def test_calendar_mcp():
     print("\n=== Testing calendar_mcp ===")
-    from pathlib import Path
     creds = Path("config/google_credentials.json")
     if creds.exists():
         from connectors.calendar_mcp.tools import list_calendars

@@ -88,15 +88,36 @@ def extract_entities(text: str, source_file: str = "") -> list[dict[str, Any]]:
             _add(tech.title() if len(tech) > 3 else tech.upper(), "technology")
 
     # Extract person names (capitalized multi-word names)
+    # Uses structural heuristics to reduce false positives:
+    #   - Must be 2-3 words (real names are rarely 4+ words)
+    #   - Each word must be 2-15 chars (filters out acronyms and long words)
+    #   - Excludes words commonly found in headings and prose
+    _NON_NAME_WORDS = {
+        "the", "this", "that", "these", "those", "some", "each", "every",
+        "phase", "step", "chapter", "section", "part", "note", "action",
+        "key", "daily", "meeting", "project", "tech", "stack", "learning",
+        "goals", "ideas", "notes", "journal", "summary", "review", "plan",
+        "deep", "build", "local", "full", "open", "next", "using", "based",
+        "recent", "current", "new", "old", "first", "last", "best", "top",
+        "may", "june", "july", "august", "january", "february", "march",
+        "april", "september", "october", "november", "december",
+        "monday", "tuesday", "wednesday", "thursday", "friday",
+        "personal", "unified", "semantic", "model", "context", "protocol",
+    }
+
     for match in NAME_PATTERN.finditer(text):
         name = match.group(1)
-        # Filter out common non-name phrases
-        skip_words = {"The", "This", "That", "These", "Those", "Phase", "Step",
-                      "Chapter", "Section", "Part", "Note", "Action", "Key",
-                      "Daily Journal", "Meeting Notes", "Project Ideas",
-                      "Tech Stack", "Learning Goals"}
-        if name not in skip_words and not any(w in name for w in ["May", "June", "July"]):
-            _add(name, "person")
+        words = name.split()
+
+        # Structural filters
+        if len(words) < 2 or len(words) > 3:
+            continue
+        if any(len(w) < 2 or len(w) > 15 for w in words):
+            continue
+        if any(w.lower() in _NON_NAME_WORDS for w in words):
+            continue
+
+        _add(name, "person")
 
     # Extract projects
     for match in PROJECT_PATTERN.finditer(text):

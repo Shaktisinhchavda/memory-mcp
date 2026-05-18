@@ -292,7 +292,7 @@ memory-mcp/
 
 - **Conversations:** Export-only (Claude/ChatGPT JSON). No live sync due to API restrictions.
 - **Calendar:** Requires a one-time Google Cloud setup for OAuth credentials.
-- **Entity extraction:** Regex-based — works well for structured notes, may be noisy on unstructured text. Swappable for spaCy/LLM.
+- **Entity extraction:** Uses structural heuristics (word count, length, non-name word filter) to reduce false positives. Still regex-based — for higher accuracy, swap in spaCy NER or an LLM-based extractor in `knowledge_graph/extractor.py`.
 
 ## License
 
